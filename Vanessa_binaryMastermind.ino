@@ -11,14 +11,14 @@
  *  - initial version
  */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <time.h>
+//  #include <stdio.h>
+//  #include <string.h>
+//  #include <stdlib.h>
+//  #include <time.h>
 
-#define NEWGAME 'n'
-#define SETTINGS 's'
-#define QUITGAME 'q' 
+//  #define NEWGAME 'n'
+//  #dine SETTINGS 's'
+//  #dine QUITGAME 'q' 
 #define DEFAULT_GUESSES 10
 #define DEFAULT_DIGITS 5
 #define MAX 50
@@ -50,7 +50,7 @@ void loop() {
   delay(200);
   char answer;
   menu();
-  while (!(Serial.available()>0)) {delay(200);}  // do nothing if no input
+  do_nothing();  // do nothing if no input
   
   if (Serial.available() > 0) {
     answer = char(getInput(1)); // get character input from user
@@ -287,8 +287,7 @@ char* getGuess() {
   }
 }
   
-
 //
-void donothing() {
-  while(1) {}
+void do_nothing() {
+  while(!Serial.available()){delay(10);
 }
