@@ -291,3 +291,5 @@ char* getGuess() {
 void do_nothing() {
   while(!Serial.available()){delay(10);
 }
+
+// Add switch functions 
