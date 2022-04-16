@@ -1,4 +1,4 @@
-/* BinMastermiind.c: Binary mastermind guessing game
+;/* BinMastermiind.c: Binary mastermind guessing game
  * author: Vanessa Yao
  *
  * Modifications
@@ -11,23 +11,80 @@
  *  - initial version
  */
 
-//  #include <stdio.h>
-//  #include <string.h>
-//  #include <stdlib.h>
-//  #include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
 
-//  #define NEWGAME 'n'
-//  #dine SETTINGS 's'
-//  #dine QUITGAME 'q' 
+#define NEWGAME 'n'
+#define SETTINGS 's'
+#define QUITGAME 'q'
 #define DEFAULT_GUESSES 10
 #define DEFAULT_DIGITS 5
 #define MAX 50
 
+/****************PIN DEFINITIONS***************/
+
+int bump_switch_0 = A15;  // pin definitions for bumper switches; currently everything is following the schematic
+int bump_switch_1 = A14;  // bump_switch_0 is for counting up; bump_switch_1 is for counting down; and bump_switch_2 is for the 'enter', also known as the enter key on your keyboard;
+int bump_switch_2 = A13;
+
+int led1 = P2_0;    // the red led in the tri-led
+int led2 = P2_1;    // the green led in the tri-led
+int led3 = P2_2;    // the blue led in the tri-led
+int led4 = P1_0;    // the individual red led
+
+int photo_in_0 = A11;
+int photo_in_1 = A9;
+//int photo_in_2 = A8;
+//int photo_in_3 = A6;
+//int photo_in_4 = A1;
+//int photo_in_5 = A0;
+//int photo_in_6 = A12;
+//int photo_in_7 = A10;
+//int photo_in_8 = A7;
+//int photo_in_9 = A4;
 
 /*******************SETTINGS*******************/
+
+int bump_switch_0_value = 0;  // intializations for bump_switch values;
+int bump_switch_1_value = 0;
+int bump_switch_2_value = 0;
+
+int photo_value_0 = 0;        // initializaitons for photoresistor values;
+int photo_value_1 = 0;
+//int photo_value_2 = 0;
+//int photo_value_3 = 0;
+//int photo_value_4 = 0;
+//int photo_value_5 = 0;
+//int photo_value_6 = 0;
+//int photo_value_7 = 0;
+//int photo_value_8 = 0;
+//int photo_value_9 = 0;
+
+int menu_option = 1; // initialization with menu_option being the first option;
+char* user_guess = NULL;
+
+int photo_ref_0 = 0;        // initializations for photoresistor reference values;
+int photo_ref_1 = 0;
+//int photo_ref_2 = 0;
+//int photo_ref_3 = 0;
+//int photo_ref_4 = 0;
+//int photo_ref_5 = 0;
+//int photo_ref_6 = 0;
+//int photo_ref_7 = 0;
+//int photo_ref_8 = 0;
+//int photo_ref_9 = 0;
+
+int offset = 150;         // the photoresistor offset value
+
+int current_input_pointer = 0;  // for recording of the current pointer location
+char enter = '\n';    // the enter key on your keyboard;
+int default_length = 1024;  // maximum input string length is 1KB
 int num_digits = DEFAULT_DIGITS;
 int num_guesses = DEFAULT_GUESSES;
-char user_guess[MAX];  
+
+int test_int = 0;         // for testing converting the user input string into an integer and add with an integer to see if output is correct;
 
 /*********************************************/
 
@@ -39,43 +96,87 @@ int changeSettings(void);
 int getInput(int c_fl);
 char* getGuess();
 void donothing();
+void photo_value(int photo_in_num, int photo_value_num);
+void up_down_enter(int bump_switch_num, int bump_switch_value);
+void show_menu();
+void turn_off_led();
 
 
-void setup() {
+void setup() {  
+  pinMode(bump_switch_0, INPUT);  // pinmode definitions for all pins used
+  pinMode(bump_switch_1, INPUT);
+  pinMode(bump_switch_2, INPUT);
+
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  pinMode(led3, OUTPUT);
+  pinMode(led4, OUTPUT);
+
+  pinMode(photo_in_0, INPUT);
+  pinMode(photo_in_1, INPUT);
+//  pinMode(photo_in_2, INPUT);
+//  pinMode(photo_in_3, INPUT);
+//  pinMode(photo_in_4, INPUT);
+//  pinMode(photo_in_5, INPUT);
+//  pinMode(photo_in_6, INPUT);
+//  pinMode(photo_in_7, INPUT);
+//  pinMode(photo_in_8, INPUT);
+//  pinMode(photo_in_9, INPUT);
+
+  user_guess = (char*) malloc(default_length * sizeof(char));
+
+  photo_ref_0 = analogRead(photo_in_0) + offset;  // these are necessary, each photoresistor's threshold value must be determined individually;
+  delay(10);
+  photo_ref_1 = analogRead(photo_in_1) + offset;
+  delay(10);
+//  photo_ref_2 = analogRead(photo_in_2) + offset;
+//  delay(10);
+//  photo_ref_3 = analogRead(photo_in_3) + offset;
+//  delay(10);
+//  photo_ref_4 = analogRead(photo_in_4) + offset;
+//  delay(10);
+//  photo_ref_5 = analogRead(photo_in_5) + offset;
+//  delay(10);
+//  photo_ref_6 = analogRead(photo_in_6) + offset;
+//  delay(10);
+//  photo_ref_7 = analogRead(photo_in_7) + offset;
+//  delay(10);
+//  photo_ref_8 = analogRead(photo_in_8) + offset;
+//  delay(10);
+//  photo_ref_9 = analogRead(photo_in_9) + offset;
+//  delay(10);
+  
   // put your setup code here, to run once:
   Serial.begin(9600);
 }
 
-void loop() {
+void loop() {  
   delay(200);
   char answer;
   menu();
-  do_nothing();  // do nothing if no input
-  
-  if (Serial.available() > 0) {
-    answer = char(getInput(1)); // get character input from user
-    Serial.println(answer);
-    
-    if (answer == QUITGAME)
-      {
-        /* quit game */
-        Serial.print("\nQuitting game...");
-        donothing();
-      }
-      else if (answer == SETTINGS)
-      {
-       /* go to settings */
-        changeSettings();
-      }
-      else if (answer == NEWGAME)
-      {
-        /* start new game */
-        startGame();
-      }
-      else
-      {
-        Serial.print("Not a valid option.\n");
-      }
+
+  scan_input();
+
+  if (menu_option == 1) {
+    Serial.println(NEWGAME);
+    /* start new game */
+    startGame();
+  }
+  else if (menu_option == 2) {
+    Serial.println(SETTINGS);
+    /* go to settings */
+    changeSettings();
+  }
+  else if (menu_option == 3) {
+    Serial.println(QUITGAME);
+    /* quit game */
+    Serial.print("\nQuitting game...");
+    free(user_guess);
+    donothing();
+  }
+  else
+  {
+    Serial.print("Not a valid option.\n");
   }
 }
 
@@ -89,10 +190,14 @@ char menu(void)
     Serial.print("*************Main Menu*************\n");
     Serial.print("\tNew Game: ");
     Serial.print(NEWGAME);
+    Serial.print(" (RGB LED, Red)");
     Serial.print("\n\tSettings: ");
     Serial.print(SETTINGS);
+    Serial.print(" (RGB LED, Green)");
     Serial.print("\n\tQuit Game: ");
     Serial.print(QUITGAME);
+    Serial.print(" (RGB LED, Blue)");
+    Serial.print("\nUse BMP0 to navigate down, BMP1 to navigate up, and BMP2 to press enter");
     Serial.print("\nEnter your choice: ");
 }
 
@@ -287,7 +392,129 @@ char* getGuess() {
   }
 }
   
+
 //
-void do_nothing() {
-  while(!Serial.available()){delay(10);
+void donothing() {
+  while(1) {}
+}
+
+void scan_input() {
+  for (int i = 0; i < current_input_pointer; i++) {   // initializing the pointer everytime this function is called; 
+    *(user_guess + i) = ' ';
+  }
+  current_input_pointer = 0;    // initializing the pointer location offset
+
+  while (*(user_guess + current_input_pointer - 1) != enter) {    // this loop exits when the last pointer is 'enter', also known as the enter key on your keyboard;
+//    Serial.println("I'm in loop");      // these are for testing purposes only
+//    Serial.println(user_guess);
+//    Serial.print("The menu_option is ");
+//    Serial.println(menu_option);
+
+    delay(1000);
+  
+    photo_value(photo_in_0, photo_value_0);
+    photo_value(photo_in_1, photo_value_1);
+  //  photo_value(photo_in_2, photo_value_2);
+  //  photo_value(photo_in_3, photo_value_3);
+  //  photo_value(photo_in_4, photo_value_4);
+  //  photo_value(photo_in_5, photo_value_5);
+  //  photo_value(photo_in_6, photo_value_6);
+  //  photo_value(photo_in_7, photo_value_7);
+  //  photo_value(photo_in_8, photo_value_8);
+  //  photo_value(photo_in_9, photo_value_9);
+  
+    up_down_enter(bump_switch_0, bump_switch_0_value);
+    up_down_enter(bump_switch_1, bump_switch_1_value);
+    up_down_enter(bump_switch_2, bump_switch_2_value);
+  
+    show_menu();
+  }
+}
+
+void photo_value(int photo_in_num, int photo_value_num) {   // this is for reading photoresistor value and convert them into string of number characters
+  photo_value_num = analogRead(photo_in_num);
+  delay(10);
+  if ((photo_in_num == photo_in_0) & (photo_value_num > photo_ref_0)) {
+    *(user_guess + current_input_pointer) = '0';
+    current_input_pointer++;
+  }
+  else if ((photo_in_num == photo_in_1) & (photo_value_num > photo_ref_1)) {
+    *(user_guess + current_input_pointer) = '1';
+    current_input_pointer++;
+  }
+//  else if ((photo_in_num == photo_in_2) & (photo_value_num > photo_ref_2)) {
+//    *(user_guess + current_input_pointer) = '2';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_3) & (photo_value_num > photo_ref_3)) {
+//    *(user_guess + current_input_pointer) = '3';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_4) & (photo_value_num > photo_ref_4)) {
+//    *(user_guess + current_input_pointer) = '4';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_5) & (photo_value_num > photo_ref_5)) {
+//    *(user_guess + current_input_pointer) = '5';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_6) & (photo_value_num > photo_ref_6)) {
+//    *(user_guess + current_input_pointer) = '6';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_7) & (photo_value_num > photo_ref_7)) {
+//    *(user_guess + current_input_pointer) = '7';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_8) & (photo_value_num > photo_ref_8)) {
+//    *(user_guess + current_input_pointer) = '8';
+//    current_input_pointer++;
+//  }
+//  else if ((photo_in_num == photo_in_9) & (photo_value_num > photo_ref_9)) {
+//    *(user_guess + current_input_pointer) = '9';
+//    current_input_pointer++;
+//  }
+}
+
+void up_down_enter(int bump_switch_num, int bump_switch_value) {    // this is for menu_selection using the bumper_switches
+  
+  bump_switch_value = analogRead(bump_switch_num);      // read bump_switch_value;
+  
+  if ((bump_switch_num == bump_switch_0) & (bump_switch_value == 1023)){    // this is for count_up;
+    (menu_option >= 4) ? menu_option = 4: menu_option++;
+  }
+  else if ((bump_switch_num == bump_switch_1) & (bump_switch_value == 1023)){   // this is for count_down;
+    (menu_option <= 1) ? menu_option = 1: menu_option--;
+  }
+  else if ((bump_switch_num == bump_switch_2) & (bump_switch_value == 1023)){   // this is for the enter key on your keyboard;
+    *(user_guess + current_input_pointer) = enter;
+    current_input_pointer++;
+  }
+  
+}
+
+void show_menu() {    // this show menu shows the menu on the board by lighting differnt LED.
+  if (menu_option == 1) {
+      turn_off_led();
+      digitalWrite(led1, HIGH);
+  }
+  else if (menu_option == 2) {
+    turn_off_led();
+    digitalWrite(led2, HIGH);
+  }
+  else if (menu_option == 3) {
+    turn_off_led();
+    digitalWrite(led3, HIGH);
+  }
+  else if (menu_option == 4) {
+    turn_off_led();
+    digitalWrite(led4, HIGH);
+  }  
+}
+
+void turn_off_led() {     // as it looks like, this function turns off all LEDs
+  digitalWrite(led1, LOW);
+  digitalWrite(led2, LOW);
+  digitalWrite(led3, LOW);
+  digitalWrite(led4, LOW);
 }
