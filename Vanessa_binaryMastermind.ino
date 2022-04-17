@@ -63,8 +63,8 @@ int photo_value_1 = 0;
 //int photo_value_9 = 0;
 
 int menu_option = 1; // initialization with menu_option being the first option;
-char* user_guess = NULL;
-char* correct_str = NULL;
+char* user_guess = NULL;      // the pointer string used for temporarily storing the user's input
+char* correct_str = NULL;     // the pointer string used for stroing the correct bit-string;
 
 int photo_ref_0 = 0;        // initializations for photoresistor reference values;
 int photo_ref_1 = 0;
@@ -124,7 +124,7 @@ void setup() {
 //  pinMode(photo_in_8, INPUT);
 //  pinMode(photo_in_9, INPUT);
 
-  user_guess = (char*) malloc(default_length * sizeof(char));
+  user_guess = (char*) malloc(default_length * sizeof(char));     // initializations for the two major global arrays;
   correct_str = (char *) malloc(default_length * sizeof(char));
 
   photo_ref_0 = analogRead(photo_in_0) + offset;  // these are necessary, each photoresistor's threshold value must be determined individually;
