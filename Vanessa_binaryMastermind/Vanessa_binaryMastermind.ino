@@ -20,9 +20,9 @@
 //#include <time.h>
 
 /****************HARDWARE***************/
-#define PR_NUM 2 // number of photoresistors
-#define BMP_NUM 3 // number of bumper switches
-#define LED_NUM 4 // number of LEDs
+const int PR_NUM = 2; // number of photoresistors
+const int BMP_NUM = 3; // number of bumper switches
+const int LED_NUM = 4; // number of LEDs
 /***************************************/
 
 #define NEWGAME 'n'
@@ -58,6 +58,7 @@ int photo_in_1 = A9;
 //int photo_in_9 = A4;
 
 const int pr_in[PR_NUM] = {A11, A9}; // testing 2 photoresistor pins
+int pr_state[PR_NUM] = {0,0};   // keeps track of photoresistor state: 0 = not previously covered, 1 = previously covered
 // const int pr_in[PR_NUM] = {A11, A9, A8, A6, A1, A0, A12, A10, A7, A4}; // 10 photoresistors
 
 
@@ -121,28 +122,32 @@ void changeSettings(void);
 int getInput(int c_fl);
 char* getGuess();
 void donothing();
-void photo_value(int photo_in_num, int photo_value_num, int i);
+void photo_value(int photo_in_num, int photo_value_num, int current_pr);
 void up_down_enter(int bump_switch_num, int bump_switch_value);
 void show_menu();
 void turn_off_led();
 
 void setup() {  
+  Serial.begin(9600);
+  Serial.println("Beginning initializationn");
   for (int i=0;i<BMP_NUM;i++) {bump_switch_values[i] = 0;}
   for (int i=0;i<PR_NUM;i++) {pr_ref[i] = 0;}
-  for (int i=0; i<(sizeof(pr_in)/sizeof(pr_in[0])); i++) {pr_values[i] = 0;}
-  user_guess = (char *) malloc(MAX * sizeof(char));  // allocating memory spaces for the user_str pointer
-
+  for (int i=0; i<PR_NUM; i++) {pr_values[i] = 0;}
+  
+  Serial.println("Initializing bumper switches as input");
   for (int i=0; i<BMP_NUM;i++) { pinMode(bump_switches[i], INPUT);}
   //pinMode(bump_switch_0, INPUT);  // pinmode definitions for all pins used
   //pinMode(bump_switch_1, INPUT);
   //pinMode(bump_switch_2, INPUT);
 
+  Serial.println("Initializing LEDs as output");
   for (int i=0;i<LED_NUM;i++) {pinMode(leds[i], OUTPUT);}
 //  pinMode(led1, OUTPUT);
 //  pinMode(led2, OUTPUT);
 //  pinMode(led3, OUTPUT);
 //  pinMode(led4, OUTPUT);
 
+  Serial.println("Initializationn photoresistors as input");
   for (int i=0;i<PR_NUM;i++) {pinMode(pr_in[i], INPUT);} 
   
 //  pinMode(photo_in_0, INPUT);
@@ -158,8 +163,12 @@ void setup() {
 
   user_guess = (char*) malloc(MAX * sizeof(char));
 
-  for (int i=0;PR_NUM;i++) {
+  Serial.println("Reading base photoresistor values...");
+  for (int i=0;i<PR_NUM;i++) {
     pr_ref[i] = analogRead(pr_in[i]) + offset;
+    Serial.print(i);
+    Serial.print(": ");
+    Serial.println(pr_ref[i]);
     delay(10);
   }
 //  
@@ -185,12 +194,11 @@ void setup() {
 //  delay(10);
   
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.println("Beginning game...");
 }
 
 void loop() {  
-  delay(200);
-  char answer;
+  delay(300);
   menu();
 
   scan_input();
@@ -235,7 +243,9 @@ void menu(void)
     Serial.print("\n\tQuit Game: ");
     Serial.print(QUITGAME);
     Serial.print(" (RGB LED, Blue)");
-    Serial.print("\nUse BMP0 to navigate down, BMP1 to navigate up, and BMP2 to press enter");
+    Serial.print("\nBMP0: navigate down");
+    Serial.print("\nBMP1: navigate up");
+    Serial.print("\nBMP2: enter");
     Serial.print("\nEnter your choice: ");
 }
 
@@ -273,9 +283,9 @@ int startGame(void)
     Serial.print(num_digits);
     Serial.print(" digits (");
     Serial.print(guesses_left);
-    Serial.print(" guesses left)"); // 'q' to quit: "); user can only enter numbers 0-9
+    Serial.print(" guesses left): "); // 'q' to quit: "); user can only enter numbers 0-9
     scan_input(); // get user guess in user_guess
-  
+  Serial.print(user_guess);
     //Serial.println(user_guess);
     //if (user_guess[0] == QUITGAME) {
     //  Serial.print("Quitting game...\n");
@@ -323,13 +333,15 @@ void changeSettings()
 {
   Serial.print("Please enter the length of the bit string: ");
   scan_input();
-  num_digits = atoi(user_guess);
+  if (atoi(user_guess) > MAX) {num_digits = MAX;} 
+  else {num_digits = atoi(user_guess);}
   Serial.print(num_digits);
   Serial.println(".");
 
   Serial.print("Please enter the max number of guesses: ");
   scan_input();
-  num_guesses = atoi(user_guess);
+  if (atoi(user_guess) > MAX) {num_guesses = MAX;} 
+  else {num_guesses = atoi(user_guess);}
   Serial.print(num_guesses);
   Serial.println(".");
 }
@@ -429,21 +441,34 @@ void scan_input() {
 //    up_down_enter(bump_switch_2, bump_switch_2_value);
   
     show_menu();
-    Serial.print(*(user_guess + current_input_pointer-1)); // print user input 
+    //Serial.print(*(user_guess + current_input_pointer-1)); // print user input 
   }
 }
 
-void photo_value(int photo_in_num, int photo_value_num, int current_pr_index) {   // this is for reading photoresistor value and convert them into string of number characters
+void photo_value(int photo_in_num, int photo_value_num, int current_pr) {   // this is for reading photoresistor value and convert them into string of number characters
   photo_value_num = analogRead(photo_in_num);
-  delay(10);
-  if ((photo_in_num == pr_in[current_pr_index]) & (photo_value_num > pr_values[current_pr_index])) {
-    *(user_guess + current_input_pointer) = current_pr_index + '0'; // add '0' to convert from int to char
+  delay(100);
+  if ((photo_in_num == pr_in[current_pr]) & (photo_value_num > pr_ref[current_pr]) & !(pr_state[current_pr])) {
+    //Serial.print(current_pr + '0');
+    *(user_guess + current_input_pointer) = current_pr + '0'; // add '0' to convert from int to char
+    pr_state[current_pr] = 1;
+    for (int i=0;i<PR_NUM;i++) {
+      if (i != current_pr) {pr_state[i] = 0;} // reset state of all photoresistors after a digit is pressed
+    }
+    Serial.print(current_pr);
     current_input_pointer++;
   }
-  else if ((photo_in_num == photo_in_1) & (photo_value_num > pr_values[0])) {
-    *(user_guess + current_input_pointer) = '1';
-    current_input_pointer++;
+  else {
+    // reset prev_covered
+    for (int i=0;i<PR_NUM;i++) {
+      pr_state[i] = 0; // reset state of all photoresistors after a digit is pressed 
+    }
   }
+
+//  else if ((photo_in_num == photo_in_1) & (photo_value_num > pr_values[0])) {
+//    *(user_guess + current_input_pointer) = '1';
+//    current_input_pointer++;
+//  }
 //  else if ((photo_in_num == photo_in_2) & (photo_value_num > pr_values[0])) {
 //    *(user_guess + current_input_pointer) = '2';
 //    current_input_pointer++;
@@ -497,6 +522,7 @@ void up_down_enter(int bump_switch_num, int bump_switch_value) {    // this is f
 
 void show_menu() {    // this show menu shows the menu on the board by lighting differnt LED.
   turn_off_led();
+  //Serial.println(menu_option);
   digitalWrite(leds[menu_option-1], HIGH); //menu options are 1,2,3,4, lists are 0-indexed so subtract 1
 //  if (menu_option == 1) {
 //      turn_off_led();

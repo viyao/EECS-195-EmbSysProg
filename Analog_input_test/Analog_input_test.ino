@@ -147,10 +147,12 @@ void photo_value(int photo_in_num, int photo_value_num) {   // this is for readi
   delay(10);
   if ((photo_in_num == photo_in_0) & (photo_value_num > photo_ref_0)) {
     *(user_str + current_input_pointer) = '0';
+    Serial.println("0 is pressed");
     current_input_pointer++;
   }
   else if ((photo_in_num == photo_in_1) & (photo_value_num > photo_ref_1)) {
     *(user_str + current_input_pointer) = '1';
+     Serial.println("1 is pressed");
     current_input_pointer++;
   }
   else if ((photo_in_num == photo_in_2) & (photo_value_num > photo_ref_2)) {
