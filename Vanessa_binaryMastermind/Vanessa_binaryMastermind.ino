@@ -117,12 +117,9 @@ void menu(void);
 int startGame(void);
 int genRandBinNum(int digits);
 int compare(char answer[], char guess[]);
-int changeSettings(void);
-
-// Not using Serial monitor inputs
-//int getInput(int c_fl);
-//char* getGuess();
-
+void changeSettings(void);
+int getInput(int c_fl);
+char* getGuess();
 void donothing();
 void photo_value(int photo_in_num, int photo_value_num, int i);
 void up_down_enter(int bump_switch_num, int bump_switch_value);
@@ -322,58 +319,19 @@ int compare(char answer[], char* guess)
 }
 
 // change settings
-int changeSettings(void)
+void changeSettings()
 {
-  Serial.read(); // read the enter line 
-  int guesses;  // # of guesses user chooses
-  int digits; // # of digits user chooses
-  char num_entered;  // option chosen by user
-  
-    // settings menu
-    Serial.print("*************Settings*************\n");
-    Serial.print("Here you can choose to change the number of digits\n");
-    Serial.print("and the number of guesses\n");
-    Serial.print("\tNumber of digits: 1\n");
-    Serial.print("\tNumber of guesses: 2\n");
-    Serial.print("\tExit to main menu: 3\n");
-    Serial.print("Enter your choice: ");
-    while (!(Serial.available()>0)) {delay(200);}  // do nothing if no input
-//    num_entered = getInput(0);  // get number
-    Serial.println(num_entered);
-    
-    if (num_entered == 3) { return 0;}
-    else if (num_entered == 2)
-    {
-      Serial.print("\nEnter the number of guesses greater than 0 less than ");
-      Serial.print(MAX);
-      Serial.print("(default ");
-      Serial.print(DEFAULT_GUESSES);
-      Serial.print("): ");
-      Serial.read(); // read the enter line 
-      while (!(Serial.available()>0)) {delay(200);}  // do nothing if no input
+  Serial.print("Please enter the length of the bit string: ");
+  scan_input();
+  num_digits = atoi(user_guess);
+  Serial.print(num_digits);
+  Serial.println(".");
 
-//      guesses = getInput(0);  // get # of guesses
-      Serial.println(guesses);
-      if ((guesses > 0) & (guesses < MAX)) {num_guesses = guesses;}
-    }
-    else if (num_entered == 1)
-    {
-      Serial.print("\nEnter the number of digits greater than 0 less than ");
-      Serial.print(MAX);
-      Serial.print("(default ");
-      Serial.print(DEFAULT_DIGITS);
-      Serial.print("): ");
-      Serial.read(); // read the enter line 
-     while (!(Serial.available()>0)) {delay(200);}  // do nothing if no input
-
-//      digits = getInput(0); // get # of digits
-      Serial.print(digits);
-      if ((digits > 0) & (digits < MAX)) {num_digits = digits;}
-    }
-    else
-    {
-      Serial.print("Enter a valid option\n");
-    }
+  Serial.print("Please enter the max number of guesses: ");
+  scan_input();
+  num_guesses = atoi(user_guess);
+  Serial.print(num_guesses);
+  Serial.println(".");
 }
 
     
