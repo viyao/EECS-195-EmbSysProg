@@ -372,6 +372,8 @@ void scan_input() {
 //    Serial.println(user_guess);
 //    Serial.print("The menu_option is ");
 //    Serial.println(menu_option);
+    Serial.print("Current input string is: ");
+    Serial.print(user_guess);
 
     delay(1000);
   
