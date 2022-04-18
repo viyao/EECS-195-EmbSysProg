@@ -40,7 +40,10 @@ const int ENTER_BMP = 2; // index of 'enter' bumper switch
 // bump_switches[0]: count down
 // bump_switches[1]: count up
 // bump_switches[2]: Enter
-const int bump_switches[BMP_NUM] = {A15, A14, A13};
+const int bump_switches[BMP_NUM] = {A15, A12, A10};
+
+// used for previous setup to test
+//const int bump_switches[BMP_NUM] = {A15, A14, A13};
 
 // bump_switch menu control {count down, count up}
 const int bmp_menu_control[2] = {-1, 1};
@@ -51,16 +54,16 @@ const int bmp_menu_control[2] = {-1, 1};
 // leds[3]: the individual red led
 const int leds[LED_NUM] = {P2_0, P2_1, P2_2, P1_0};
 
-//int photo_in_0 = A11;
-//int photo_in_1 = A9;
-////int photo_in_2 = A8;
-//int photo_in_3 = A6;
-//int photo_in_4 = A1;
-//int photo_in_5 = A0;
-//int photo_in_6 = A12;
-//int photo_in_7 = A10;
-//int photo_in_8 = A7;
-//int photo_in_9 = A4;
+//int photo_in_0 = A9;
+//int photo_in_1 = A8;
+////int photo_in_2 = A6;
+//int photo_in_3 = A1;
+//int photo_in_4 = A0;
+//int photo_in_5 = A19;
+//int photo_in_6 = A18;
+//int photo_in_7 = A16;
+//int photo_in_8 = 22;
+//int photo_in_9 = A2;
 
 const int pr_in[PR_NUM] = {A11, A9}; // testing 2 photoresistor pins
 
@@ -73,6 +76,9 @@ int bump_switch_values[BMP_NUM];
 
 int pr_values[PR_NUM];
 
+// menu option 1: Start game
+//             2: Settings
+//             3: Auit game
 int menu_option = 1; // initialization with menu_option being the first option;
 
 char *user_guess = NULL;  // defining a pointer that takes user input;
@@ -182,8 +188,8 @@ void menu(void)
     Serial.print("\n\tQuit Game: ");
     Serial.print(QUITGAME);
     Serial.print(" (RGB LED, Blue)");
-    Serial.print("\nBMP0: navigate down");
-    Serial.print("\nBMP1: navigate up");
+    Serial.print("\nBMP0: navigate up");
+    Serial.print("\nBMP1: navigate down");
     Serial.print("\nBMP2: enter");
     Serial.print("\nEnter your choice: ");
 }
@@ -196,7 +202,7 @@ int startGame(void)
   int result = 1; // result is 0 if win, 1 if lose/quit
   
   /* generate random binary number based on number of digits given */
-  Serial.print("Enter a random number(less than ");
+  Serial.print("Enter a random number to generate the answer (less than ");
   Serial.print(MAX);
   Serial.print(" digits): ");
   scan_input();
@@ -214,7 +220,7 @@ int startGame(void)
   // check the answer is random 
   // Serial.print("Answer: ");
   // Serial.println(answer);
-
+  Serial.println("Game start!");
   while (guesses_left > 0)
   {
     Serial.print("Enter your guess, no more than ");
@@ -322,15 +328,17 @@ void photo_value(int photo_in_num, int photo_value_num, int current_pr) {   // t
 void up_down_enter(int bump_switch_num, int bump_switch_value, int bmp_num) {    // this is for menu_selection using the bumper_switches
   
   bump_switch_value = analogRead(bump_switch_num);      // read bump_switch_value;
-  
-  if ((bmp_num != ENTER_BMP) & (bump_switch_value == 1023)){    // this is for counting up/counting down;
-    ((menu_option >= 3) | (menu_option <=1)) ? menu_option = menu_option: menu_option += bmp_menu_control[bmp_num]; // counts down if bmp_num=0, counts up if bmp_num = 1
+  if ((bmp_num != ENTER_BMP) & (bump_switch_value == 1023)){    // this is for counting up/counting down;  
+      
+      // checks if counting down and 1 < menu option <= 3, or counting up and 3 > menu option >= 1
+      if (((menu_option <= 3) & (menu_option > 1) & (bmp_num==0) ) | ((menu_option >=1) & (menu_option < 3) & (bmp_num==1))) {
+        menu_option += bmp_menu_control[bmp_num];
+    }
+    else if ((bmp_num == ENTER_BMP) & (bump_switch_value == 1023)){   // this is for the enter key on your keyboard;
+      *(user_guess + current_input_pointer) = enter;
+      current_input_pointer++;
+    }  
   }
-  else if ((bump_switch_value == 1023)){   // this is for the enter key on your keyboard;
-    *(user_guess + current_input_pointer) = enter;
-    current_input_pointer++;
-  }
-  
 }
 
 void show_menu() {    // this show menu shows the menu on the board by lighting differnt LED.
