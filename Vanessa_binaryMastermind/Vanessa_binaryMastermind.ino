@@ -22,7 +22,7 @@
 //#include <time.h>
 
 /****************HARDWARE***************/
-const int PR_NUM = 2; // number of photoresistors
+const int PR_NUM = 10; // number of photoresistors
 const int BMP_NUM = 3; // number of bumper switches
 const int LED_NUM = 4; // number of LEDs
 const int ENTER_BMP = 2; // index of 'enter' bumper switch 
@@ -65,10 +65,10 @@ const int leds[LED_NUM] = {P2_0, P2_1, P2_2, P1_0};
 //int photo_in_8 = 22;
 //int photo_in_9 = A2;
 
-const int pr_in[PR_NUM] = {A11, A9}; // testing 2 photoresistor pins
+//const int pr_in[PR_NUM] = {A11, A9}; // testing 2 photoresistor pins
 
 /**** Uncomment to implement 10 Photoresistors, change PR_NUM to 10, and comment the line above *********/
-// const int pr_in[PR_NUM] = {A11, A9, A8, A6, A1, A0, A12, A10, A7, A4}; // 10 photoresistors
+const int pr_in[PR_NUM] = {A9, A8, A6, A1, A0, A19, A18 , A16, A7, A2}; // 10 photoresistors
 
 
 /*******************SETTINGS*******************/
@@ -113,13 +113,12 @@ void turn_off_led();
 
 void setup() {  
   Serial.begin(9600);
-  Serial.println("Beginning initializationn");
+  //Serial.println("Beginning initializationn");
   
   for (int i=0;i<BMP_NUM;i++) {bump_switch_values[i] = 0;} // intializations for bump_switch values;
   for (int i=0;i<PR_NUM;i++) {pr_ref[i] = 0;} // initializations for photoresistor reference values;
   for (int i=0; i<PR_NUM; i++) {pr_values[i] = 0;} // initialize photoresistor values
   
-  // Serial.println("Initializing bumper switches as input");
   for (int i=0; i<BMP_NUM;i++) { pinMode(bump_switches[i], INPUT);}
   
   //Serial.println("Initializing LEDs as output");
@@ -129,14 +128,15 @@ void setup() {
   for (int i=0;i<PR_NUM;i++) {pinMode(pr_in[i], INPUT);}
 
   // initialize user guess with pointer to string of size MAX
+//  Serial.println("Allocating memory for user guess");
   user_guess = (char*) malloc(MAX * sizeof(char));
 
   //Serial.println("Reading base photoresistor values...");
   for (int i=0;i<PR_NUM;i++) {
     pr_ref[i] = analogRead(pr_in[i]) + offset;
-    Serial.print(i);
-    Serial.print(": ");
-    Serial.println(pr_ref[i]);
+//    Serial.print(i);
+//    Serial.print(": ");
+//    Serial.println(pr_ref[i]);
     delay(10);
   }
 
@@ -145,6 +145,8 @@ void setup() {
 
 void loop() {  
   delay(300);
+  Serial.print("\n*************Binary Mastermind*************\n");
+  Serial.print("Welcome to binary mastermind!\n");
   menu();
 
   scan_input();
@@ -166,7 +168,6 @@ void loop() {
     /* quit game */
     Serial.print("\nQuitting game...");
     free(user_guess);
-    donothing();
   }
   in_mainmenu = 1;
 }
@@ -176,8 +177,6 @@ void menu(void)
 {
     /* print main menu */
     /* return option chosen */
-    Serial.print("\n*************Binary Mastermind*************\n");
-    Serial.print("Welcome to binary mastermind!\n");
     Serial.print("*************Main Menu*************\n");
     Serial.print("\tNew Game: ");
     Serial.print(NEWGAME);
@@ -207,7 +206,6 @@ int startGame(void)
   Serial.print(" digits): ");
   scan_input();
   int seed = atoi(user_guess); // get seed from user
-  Serial.println(seed);
   srand(seed);
 
   // generate random binary number(as a string)
@@ -220,7 +218,7 @@ int startGame(void)
   // check the answer is random 
   // Serial.print("Answer: ");
   // Serial.println(answer);
-  Serial.println("Game start!");
+  Serial.println("\nGame start!");
   while (guesses_left > 0)
   {
     Serial.print("Enter your guess, no more than ");
@@ -239,7 +237,11 @@ int startGame(void)
     else {continue;}
   }
   if (result == 0) {Serial.print("Congratulations, you guessed right!\n");}
-  else {Serial.print("Game over! You've used all your guesses. Better luck next time!\n");}
+  else {
+    Serial.print("Game over! You've used all your guesses. Better luck next time!\n");
+    Serial.print("The correct answer is ");
+    Serial.print(answer);
+    }
   
 // Uncomment below two lines to reset to default guesses and digits
 //  num_guesses = DEFAULT_GUESSES;
@@ -275,14 +277,10 @@ void changeSettings()
   scan_input();
   if (atoi(user_guess) > MAX) {num_digits = MAX;} 
   else {num_digits = atoi(user_guess);}
-  Serial.print(num_digits);
-  Serial.println(".");
 
   Serial.print("Please enter the max number of guesses: ");
   scan_input();
   num_guesses = atoi(user_guess);
-  Serial.print(num_guesses);
-  Serial.println(".");
 }
 
 void scan_input() {
@@ -311,6 +309,7 @@ void scan_input() {
     // check if user tries to enter more than MAX number of characters
     if (current_input_pointer == MAX+1) {break;}
   }
+  Serial.println();
 }
 
 void photo_value(int photo_in_num, int photo_value_num, int current_pr) {   // this is for reading photoresistor value and convert them into string of number characters
@@ -329,16 +328,16 @@ void up_down_enter(int bump_switch_num, int bump_switch_value, int bmp_num) {   
   
   bump_switch_value = analogRead(bump_switch_num);      // read bump_switch_value;
   if ((bmp_num != ENTER_BMP) & (bump_switch_value == 1023)){    // this is for counting up/counting down;  
-      
       // checks if counting down and 1 < menu option <= 3, or counting up and 3 > menu option >= 1
       if (((menu_option <= 3) & (menu_option > 1) & (bmp_num==0) ) | ((menu_option >=1) & (menu_option < 3) & (bmp_num==1))) {
         menu_option += bmp_menu_control[bmp_num];
+      }
     }
     else if ((bmp_num == ENTER_BMP) & (bump_switch_value == 1023)){   // this is for the enter key on your keyboard;
       *(user_guess + current_input_pointer) = enter;
       current_input_pointer++;
     }  
-  }
+  
 }
 
 void show_menu() {    // this show menu shows the menu on the board by lighting differnt LED.
