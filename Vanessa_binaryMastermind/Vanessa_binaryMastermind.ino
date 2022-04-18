@@ -63,9 +63,8 @@ const int leds[LED_NUM] = {P2_0, P2_1, P2_2, P1_0};
 //int photo_in_9 = A4;
 
 const int pr_in[PR_NUM] = {A11, A9}; // testing 2 photoresistor pins
-int pr_state[PR_NUM] // keeps track of photoresistor state: 0 = not previously covered, 1 = previously covered
 
-/**** Uncomment to implement 10 Photoresistors, change PR_NUM to 10, and comment the 2 lines above *********/
+/**** Uncomment to implement 10 Photoresistors, change PR_NUM to 10, and comment the line above *********/
 // const int pr_in[PR_NUM] = {A11, A9, A8, A6, A1, A0, A12, A10, A7, A4}; // 10 photoresistors
 
 
@@ -90,6 +89,7 @@ int num_guesses = DEFAULT_GUESSES;
 
 int test_int = 0;         // for testing converting the user input string into an integer and add with an integer to see if output is correct;
 
+int in_mainmenu = 1;  // inidicates if user is in main menu(disable photoresistor input since it is only used in-game and in settings)
 /*********************************************/
 
 void menu(void);
@@ -146,9 +146,11 @@ void loop() {
   if (menu_option == 1) {
     Serial.println(NEWGAME);
     /* start new game */
+    in_mainmenu = 0;
     startGame();
   }
   else if (menu_option == 2) {
+    in_mainmenu = 0;
     Serial.println(SETTINGS);
     /* go to settings */
     changeSettings();
@@ -160,6 +162,7 @@ void loop() {
     free(user_guess);
     donothing();
   }
+  in_mainmenu = 1;
 }
 
 // print main menu
@@ -271,8 +274,7 @@ void changeSettings()
 
   Serial.print("Please enter the max number of guesses: ");
   scan_input();
-  if (atoi(user_guess) > MAX) {num_guesses = MAX;} 
-  else {num_guesses = atoi(user_guess);}
+  num_guesses = atoi(user_guess);
   Serial.print(num_guesses);
   Serial.println(".");
 }
@@ -291,44 +293,38 @@ void scan_input() {
 
     delay(1000);
 
-    for (int i=0;i<PR_NUM;i++) {photo_value(pr_in[i], pr_values[i], i);}
-  
+    // check for photoresistor input if not in main menu
+    if (!(in_mainmenu)) {
+      for (int i=0;i<PR_NUM;i++) {photo_value(pr_in[i], pr_values[i], i);}
+    }
+
+    // check for bumper switch input
     for (int i=0;i<BMP_NUM;i++) {up_down_enter(bump_switches[i], bump_switch_values[i], i);}
   
     show_menu();
+    // check if user tries to enter more than MAX number of characters
+    if (current_input_pointer == MAX+1) {break;}
   }
 }
 
 void photo_value(int photo_in_num, int photo_value_num, int current_pr) {   // this is for reading photoresistor value and convert them into string of number characters
   photo_value_num = analogRead(photo_in_num);
   delay(100);
-  if ((photo_in_num == pr_in[current_pr]) & (photo_value_num > pr_ref[current_pr]) & !(pr_state[current_pr])) {
+  if ((photo_in_num == pr_in[current_pr]) & (photo_value_num > pr_ref[current_pr])) {
     //Serial.print(current_pr + '0');
     *(user_guess + current_input_pointer) = current_pr + '0'; // add '0' to convert from int to char
-    pr_state[current_pr] = 1;
-    for (int i=0;i<PR_NUM;i++) {
-      if (i != current_pr) {pr_state[i] = 0;} // reset state of all photoresistors after a digit is pressed
-    }
-    Serial.print(current_pr);
+    Serial.print(current_pr); // print user input
     current_input_pointer++;
   }
-  else if ((photo_value_num > pr_ref[current_pr]) & (pr_state[current_pr])) {
-    // do nothing if user is still pressing photoresistor
-    }
-
-  else {
-    for (int i=0;i<PR_NUM;i++) {
-      pr_state[i] = 0; // reset state of all photoresistors after a digit is pressed 
-    }
-  }
 }
+
 
 void up_down_enter(int bump_switch_num, int bump_switch_value, int bmp_num) {    // this is for menu_selection using the bumper_switches
   
   bump_switch_value = analogRead(bump_switch_num);      // read bump_switch_value;
   
   if ((bmp_num != ENTER_BMP) & (bump_switch_value == 1023)){    // this is for counting up/counting down;
-    ((menu_option >= 4) | (menu_option <=1)) ? menu_option = menu_option: menu_option += bmp_menu_control[bmp_num]; // counts down if bmp_num=0, counts up if bmp_num = 1
+    ((menu_option >= 3) | (menu_option <=1)) ? menu_option = menu_option: menu_option += bmp_menu_control[bmp_num]; // counts down if bmp_num=0, counts up if bmp_num = 1
   }
   else if ((bump_switch_value == 1023)){   // this is for the enter key on your keyboard;
     *(user_guess + current_input_pointer) = enter;
@@ -345,4 +341,8 @@ void show_menu() {    // this show menu shows the menu on the board by lighting 
 
 void turn_off_led() {     // as it looks like, this function turns off all LEDs
   for (int i=0;i<LED_NUM;i++) {digitalWrite(leds[i], LOW);}
+}
+
+void donothing() {
+  while(1) {}
 }
